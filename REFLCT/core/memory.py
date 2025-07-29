@@ -32,6 +32,7 @@
 #         )
 
 from sentence_transformers import SentenceTransformer
+import uuid
 import chromadb
 
 class MemoryManager:
@@ -43,11 +44,17 @@ class MemoryManager:
     def _embed(self, text: str):
         return self.embedder.encode(text).tolist()
 
-    def add(self, content: str, metadata: dict = None):
+    def add(self, content: str, metadata: dict = None, id: str = None):
+        """
+        Add a document to Chroma with embeddings and unique ID.
+        """
+        if id is None:
+            id = str(uuid.uuid4())
+
         self.collection.add(
             documents=[content],
             metadatas=[metadata or {}],
-            ids=[str(hash(content))],
+            ids=[id],
             embeddings=[self._embed(content)]
         )
 
@@ -56,3 +63,10 @@ class MemoryManager:
             query_embeddings=[self._embed(query)],
             n_results=n_results
         )
+    
+    def print_all(self):
+        results = self.collection.get()
+        print("\n📚 ALL MEMORY ENTRIES:")
+        for i, doc in enumerate(results["documents"]):
+            print(f"ID: {results['ids'][i]} | Doc: {doc} | Meta: {results['metadatas'][i]}")
+
